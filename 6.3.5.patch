@@ -1,0 +1,36 @@
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 84dbd7a4..ebce2e2e 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -73,7 +73,6 @@ repos:
+         name: biome
+         alias: biome
+         args: [--unsafe]
+-        priority: 0
+   - repo: https://github.com/pre-commit/pre-commit-hooks.git
+     rev: v6.0.0
+     hooks:
+diff --git a/biome.json b/biome.json
+index d6d4ebe0..98ef7909 100644
+--- a/biome.json
++++ b/biome.json
+@@ -10,9 +10,6 @@
+   "files": {
+     "includes": [
+       "**",
+-      "!src/ansiblelint/schemas",
+-      "!docs/_static/theme_overrides.css",
+-      "!test/schemas/negative_test",
+       "!examples/**/pattern.json"
+     ]
+   },
+diff --git a/package.json b/package.json
+index c2436a9f..98232c64 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1 @@
+ {
+-  "devDependencies": {
+-    "prettier": "^3.3.3"
+-  }
+-}
