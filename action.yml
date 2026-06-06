@@ -112,7 +112,18 @@ runs:
       if: inputs.requirements_file != ''
       shell: bash
       working-directory: ${{ steps.inputs.outputs.working_directory }}
-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
+      run: |
+        ansible-galaxy install -r ${{ inputs.requirements_file }}
+
+        # Export ANSIBLE_COLLECTIONS_PATH so that pre-commit and other
+        # subprocesses can find the installed collections. ansible-galaxy
+        # installs collections to ~/.ansible/collections by default.
+        # We propagate this to GITHUB_ENV so that subsequent steps
+        # (including pre-commit hooks) inherit the correct path.
+        COLLECTIONS_PATH="$HOME/.ansible/collections"
+        if [ -d "$COLLECTIONS_PATH" ]; then
+          echo "ANSIBLE_COLLECTIONS_PATH=${COLLECTIONS_PATH}" >> "$GITHUB_ENV"
+        fi
 
     - name: Run ansible-lint
       shell: bash

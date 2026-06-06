@@ -1,0 +1,40 @@
+diff --git a/.pre-commit-hooks.yaml b/.pre-commit-hooks.yaml
+index 455e7b16..2d852116 100644
+--- a/.pre-commit-hooks.yaml
++++ b/.pre-commit-hooks.yaml
+@@ -6,7 +6,10 @@
+   # keep name lowercase for consistency with other hook names
+   name: ansible-lint
+   description: This hook runs ansible-lint.
+-  entry: python3 -m ansiblelint -v --force-color
++  # Use a shell wrapper so that PYTHONPATH from the parent environment
++  # (e.g. set by GitHub Action when installing collections via requirements_file)
++  # is explicitly passed through to ansible-lint inside the isolated venv.
++  entry: bash -c 'PYTHONPATH="${PYTHONPATH:-}" python3 -m ansiblelint -v --force-color'
+   language: python
+   # version is needed to avoid accidental use of python3.10 on some platforms
+   # as this is not supported by recent versions of ansible-lint and ansible-core
+diff --git a/action.yml b/action.yml
+index e9dddfbe..0a714cbf 100644
+--- a/action.yml
++++ b/action.yml
+@@ -112,7 +112,18 @@ runs:
+       if: inputs.requirements_file != ''
+       shell: bash
+       working-directory: ${{ steps.inputs.outputs.working_directory }}
+-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
++      run: |
++        ansible-galaxy install -r ${{ inputs.requirements_file }}
++
++        # Export ANSIBLE_COLLECTIONS_PATH so that pre-commit and other
++        # subprocesses can find the installed collections. ansible-galaxy
++        # installs collections to ~/.ansible/collections by default.
++        # We propagate this to GITHUB_ENV so that subsequent steps
++        # (including pre-commit hooks) inherit the correct path.
++        COLLECTIONS_PATH="$HOME/.ansible/collections"
++        if [ -d "$COLLECTIONS_PATH" ]; then
++          echo "ANSIBLE_COLLECTIONS_PATH=${COLLECTIONS_PATH}" >> "$GITHUB_ENV"
++        fi
+ 
+     - name: Run ansible-lint
+       shell: bash

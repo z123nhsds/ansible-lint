@@ -6,7 +6,10 @@
   # keep name lowercase for consistency with other hook names
   name: ansible-lint
   description: This hook runs ansible-lint.
-  entry: python3 -m ansiblelint -v --force-color
+  # Use a shell wrapper so that PYTHONPATH from the parent environment
+  # (e.g. set by GitHub Action when installing collections via requirements_file)
+  # is explicitly passed through to ansible-lint inside the isolated venv.
+  entry: bash -c 'PYTHONPATH="${PYTHONPATH:-}" python3 -m ansiblelint -v --force-color'
   language: python
   # version is needed to avoid accidental use of python3.10 on some platforms
   # as this is not supported by recent versions of ansible-lint and ansible-core
