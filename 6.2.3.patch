@@ -1,0 +1,27 @@
+diff --git a/action.yml b/action.yml
+index e9dddfbe..ec91b7ca 100644
+--- a/action.yml
++++ b/action.yml
+@@ -84,22 +84,6 @@ runs:
+         echo "reqs_file=$reqs_file" >> $GITHUB_OUTPUT
+         wget --output-document=$reqs_file https://raw.githubusercontent.com/ansible/ansible-lint/$GH_ACTION_REF/.config/requirements-lock.txt
+ 
+-    - name: Set up uv
+-      if: inputs.setup_python == 'true'
+-      uses: astral-sh/setup-uv@v8.1.0
+-      with:
+-        enable-cache: true
+-        python-version: ${{ inputs.python_version }}
+-
+-    - name: Install ansible-lint
+-      shell: bash
+-      env:
+-        GH_ACTION_REF: ${{ env.ACTION_REF }}
+-      # We need to set the version manually because $GITHUB_ACTION_PATH is not
+-      # a git clone and setuptools-scm would not be able to determine the version.
+-      # git+https://github.com/ansible/ansible-lint@${{ github.action_ref || 'main' }}
+-      # SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.action_ref || 'main' }}
+-      run: |
+         if [[ "${{ inputs.setup_python }}" == "true" ]]; then
+           uv tool install --python ${{ inputs.python_version }} "ansible-lint[lock] @ git+https://github.com/ansible/ansible-lint@$GH_ACTION_REF"
+         else
