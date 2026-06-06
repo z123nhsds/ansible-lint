@@ -6,7 +6,7 @@
   # keep name lowercase for consistency with other hook names
   name: ansible-lint
   description: This hook runs ansible-lint.
-  entry: python3 -m ansiblelint -v --force-color
+  entry: bash -ec 'if [[ -n "${ANSIBLE_COLLECTIONS_PATH:-}" ]]; then export PYTHONPATH="${ANSIBLE_COLLECTIONS_PATH}${PYTHONPATH:+:${PYTHONPATH}}"; fi; exec python3 -m ansiblelint -v --force-color "$@"' --
   language: python
   # version is needed to avoid accidental use of python3.10 on some platforms
   # as this is not supported by recent versions of ansible-lint and ansible-core
@@ -15,10 +15,3 @@
   # https://github.com/ansible/ansible-lint/issues/611
   pass_filenames: false
   always_run: true
-  additional_dependencies:
-    # https://github.com/pre-commit/pre-commit/issues/1526
-    # If you want to use a specific version of ansible-core or ansible, feel
-    # free to override `additional_dependencies` in your own hook config
-    # file as we only support latest stable version of ansible-core when used
-    # as an action.
-    - ansible-core>=2.19.0
