@@ -1,0 +1,172 @@
+diff --git a/action.yml b/action.yml
+index e9dddfbe..17a0123b 100644
+--- a/action.yml
++++ b/action.yml
+@@ -1,43 +1,44 @@
+----
+ name: run-ansible-lint
+ description: Run Ansible Lint
+ author: Ansible by Red Hat <info@ansible.com>
+ branding:
+   icon: shield
+   color: red
++
+ inputs:
+   args:
+     description: Arguments to be passed to ansible-lint command.
+     required: false
+     default: ""
+-  setup_python:
+-    description: If false, this action will not setup python and will instead rely on the already installed python.
+-    required: false
+-    default: "true"
+-  python_version:
+-    description: The version of Python to use when setting up Python environment. Default is 3.14.
++  requirements_file:
++    description: Path to the requirements YAML file to install role and collection dependencies.
+     required: false
+-    default: "3.14"
++    default: ""
+   working_directory:
+     description: The directory where to run ansible-lint from. Default is `github.workspace`.
+     required: false
+     default: ""
+-  requirements_file:
+-    description: Path to the requirements YAML file to install role and collection dependencies.
++  python_version:
++    description: The version of Python to use when setting up Python environment. Default is 3.14.
+     required: false
+-    default: ""
+-  expected_return_code:
+-    description: (Internal use only) Expected return code from ansible-lint. Default is 0. Used for self-testing purposes.
++    default: "3.14"
++  setup_python:
++    description: If false, this action will not setup python and will instead rely on the already installed python.
+     required: false
+-    default: "0"
++    default: "true"
+   override_version:
+     description: The branch, tag, or commit to use for ansible-lint.
+-    default: ""
+     required: false
++    default: ""
+   gh_action_ref:
+-    description: (Deprecated) Use 'override_version' instead.
++    description: "(Deprecated) Use 'override_version' instead."
++    required: false
+     default: ""
++  expected_return_code:
++    description: "(Internal use only) Expected return code from ansible-lint. Default is 0. Used for self-testing purposes."
+     required: false
++    default: "0"
++
+ runs:
+   using: composite
+   steps:
+@@ -46,14 +47,13 @@ runs:
+       shell: bash
+       run: |
+         if [[ -n "${{ inputs.working_directory }}" ]]; then
+-          echo "working_directory=${{ inputs.working_directory }}" >> $GITHUB_OUTPUT
++          echo "working_directory=${{ inputs.working_directory }}" >> "$GITHUB_OUTPUT"
+         else
+-          echo "working_directory=${{ github.workspace }}" >> $GITHUB_OUTPUT
++          echo "working_directory=${{ github.workspace }}" >> "$GITHUB_OUTPUT"
+         fi
+ 
+-    # If this action is imported as part of another composite action, the value of github.action_ref is the branch/commit/tag of the source action, not this one.
+-    # This allows a user to override it using the input variable
+-    - name: Determine github action ref
++    - name: Determine ansible-lint ref
++      id: determine_ref
+       shell: bash
+       env:
+         OVERRIDE_VER: ${{ inputs.override_version }}
+@@ -64,25 +64,29 @@ runs:
+         if [[ -n "${OLD_REF}" ]]; then
+           echo "::warning::Using input 'gh_action_ref': Loading ansible-lint version ${action_ref}. This input is deprecated; please use 'override_version' instead."
+         else
+-          echo "Using ansible-lint ref: $action_ref"
++          echo "Using ansible-lint ref: ${action_ref}"
+         fi
++        echo "action_ref=${action_ref}" >> "$GITHUB_OUTPUT"
+         echo "ACTION_REF=${action_ref}" >> "$GITHUB_ENV"
+ 
+-    # Due to GHA limitation, caching works only for files within GITHUB_WORKSPACE
+-    # folder, so we are forced to stick this temporary file inside .git, so it
+-    # will not affect the linted repository.
+-    # https://github.com/actions/toolkit/issues/1035
+-    # https://github.com/actions/setup-python/issues/361
+     - name: Generate .git/ansible-lint-requirements.txt
+       id: get_reqs
+       shell: bash
+       env:
+-        GH_ACTION_REF: ${{ env.ACTION_REF }}
++        GH_ACTION_REF: ${{ steps.determine_ref.outputs.action_ref }}
+       working-directory: ${{ steps.inputs.outputs.working_directory }}
+       run: |
+-        reqs_file=$(git rev-parse --show-toplevel)/.git/ansible-lint-requirements.txt
+-        echo "reqs_file=$reqs_file" >> $GITHUB_OUTPUT
+-        wget --output-document=$reqs_file https://raw.githubusercontent.com/ansible/ansible-lint/$GH_ACTION_REF/.config/requirements-lock.txt
++        repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "${{ steps.inputs.outputs.working_directory }}")
++        reqs_file="${repo_root}/.git/ansible-lint-requirements.txt"
++        echo "reqs_file=${reqs_file}" >> "$GITHUB_OUTPUT"
++
++        mkdir -p "$(dirname "${reqs_file}")"
++
++        download_url="https://raw.githubusercontent.com/ansible/ansible-lint/${GH_ACTION_REF}/.config/requirements-lock.txt"
++        if ! wget --output-document="${reqs_file}" "${download_url}" 2>/dev/null; then
++          echo "::warning::Failed to download requirements-lock.txt from ${download_url}. Falling back to pip without lock file."
++          rm -f "${reqs_file}"
++        fi
+ 
+     - name: Set up uv
+       if: inputs.setup_python == 'true'
+@@ -94,31 +98,30 @@ runs:
+     - name: Install ansible-lint
+       shell: bash
+       env:
+-        GH_ACTION_REF: ${{ env.ACTION_REF }}
+-      # We need to set the version manually because $GITHUB_ACTION_PATH is not
+-      # a git clone and setuptools-scm would not be able to determine the version.
+-      # git+https://github.com/ansible/ansible-lint@${{ github.action_ref || 'main' }}
+-      # SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.action_ref || 'main' }}
++        GH_ACTION_REF: ${{ steps.determine_ref.outputs.action_ref }}
++        SETUP_PYTHON: ${{ inputs.setup_python }}
++        PYTHON_VERSION: ${{ inputs.python_version }}
++        REQS_FILE: ${{ steps.get_reqs.outputs.reqs_file }}
+       run: |
+-        if [[ "${{ inputs.setup_python }}" == "true" ]]; then
+-          uv tool install --python ${{ inputs.python_version }} "ansible-lint[lock] @ git+https://github.com/ansible/ansible-lint@$GH_ACTION_REF"
+-        else
+-          echo "setup_python is false, using pip"
+-          pip install "ansible-lint[lock] @ git+https://github.com/ansible/ansible-lint@$GH_ACTION_REF"
+-        fi
+-        ansible-lint --version
++        chmod +x "${{ github.action_path }}/scripts/run-ansible-lint.sh"
++        "${{ github.action_path }}/scripts/run-ansible-lint.sh" install
+ 
+     - name: Install role and collection dependencies from requirements file
+       if: inputs.requirements_file != ''
+       shell: bash
+       working-directory: ${{ steps.inputs.outputs.working_directory }}
+-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
++      run: |
++        if ! ansible-galaxy install -r "${{ inputs.requirements_file }}"; then
++          echo "::error::Failed to install dependencies from ${{ inputs.requirements_file }}"
++          exit 1
++        fi
+ 
+     - name: Run ansible-lint
+       shell: bash
+       working-directory: ${{ steps.inputs.outputs.working_directory }}
++      env:
++        ANSIBLE_LINT_ARGS: ${{ inputs.args }}
++        EXPECTED_RETURN_CODE: ${{ inputs.expected_return_code }}
+       run: |
+-        exit_code=0
+-        expected_exit_code=${{ inputs.expected_return_code }}
+-        ansible-lint ${{ inputs.args }} || exit_code=$?
+-        if [ "$exit_code" != "$expected_exit_code" ]; then echo "Command failed: got '$exit_code', expected '$expected_exit_code'"; exit 1; fi
++        chmod +x "${{ github.action_path }}/scripts/run-ansible-lint.sh"
++        "${{ github.action_path }}/scripts/run-ansible-lint.sh" lint
