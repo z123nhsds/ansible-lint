@@ -112,7 +112,27 @@ runs:
       if: inputs.requirements_file != ''
       shell: bash
       working-directory: ${{ steps.inputs.outputs.working_directory }}
-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
+      run: |
+        # 创建本地集合和角色目录
+        mkdir -p ./collections ./roles
+        
+        # 安装依赖，并确保它们安装在可访问的位置
+        ansible-galaxy install -r ${{ inputs.requirements_file }} --collections-path ./collections --roles-path ./roles
+        
+        # 设置环境变量，确保 ansible-lint 能够找到它们
+        echo "ANSIBLE_COLLECTIONS_PATH=./collections:${ANSIBLE_COLLECTIONS_PATH:-}" >> $GITHUB_ENV
+        echo "ANSIBLE_ROLES_PATH=./roles:${ANSIBLE_ROLES_PATH:-}" >> $GITHUB_ENV
+        
+        # 同时设置 PYTHONPATH 以确保任何相关的 Python 模块也能被找到
+        if [ -d "./collections" ]; then
+          echo "PYTHONPATH=./collections:${PYTHONPATH:-}" >> $GITHUB_ENV
+        fi
+        
+        # 验证安装
+        echo "Collections installed in:"
+        ls -la ./collections/ 2>/dev/null || echo "No collections installed"
+        echo "Roles installed in:"
+        ls -la ./roles/ 2>/dev/null || echo "No roles installed"
 
     - name: Run ansible-lint
       shell: bash
