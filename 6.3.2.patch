@@ -1,0 +1,81 @@
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 84dbd7a4..9550d494 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -70,9 +70,10 @@ repos:
+     rev: "v2.4.15"
+     hooks:
+       - id: biome-check
+-        name: biome
++        name: biome check
+         alias: biome
+         args: [--unsafe]
++        files: \.(jsx?|tsx?|c(js|ts)|m(js|ts)|d\.(ts|cts|mts)|jsonc?|css|svelte|vue|astro|graphql|gql)$
+         priority: 0
+   - repo: https://github.com/pre-commit/pre-commit-hooks.git
+     rev: v6.0.0
+diff --git a/biome.json b/biome.json
+index d6d4ebe0..b322ee14 100644
+--- a/biome.json
++++ b/biome.json
+@@ -9,7 +9,25 @@
+   },
+   "files": {
+     "includes": [
+-      "**",
++      "**/*.js",
++      "**/*.jsx",
++      "**/*.ts",
++      "**/*.tsx",
++      "**/*.cjs",
++      "**/*.mjs",
++      "**/*.cts",
++      "**/*.mts",
++      "**/*.d.ts",
++      "**/*.d.cts",
++      "**/*.d.mts",
++      "**/*.json",
++      "**/*.jsonc",
++      "**/*.css",
++      "**/*.graphql",
++      "**/*.gql",
++      "**/*.svelte",
++      "**/*.vue",
++      "**/*.astro",
+       "!src/ansiblelint/schemas",
+       "!docs/_static/theme_overrides.css",
+       "!test/schemas/negative_test",
+@@ -18,12 +36,16 @@
+   },
+   "formatter": {
+     "enabled": true,
+-    "indentStyle": "space"
++    "indentStyle": "space",
++    "indentWidth": 2,
++    "lineWidth": 80
+   },
+   "json": {
+     "formatter": {
+       "enabled": true,
+-      "indentStyle": "space"
++      "indentStyle": "space",
++      "indentWidth": 2,
++      "lineWidth": 80
+     }
+   },
+   "vcs": {
+diff --git a/package.json b/package.json
+index c2436a9f..d03dbef9 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1,9 @@
+ {
++  "scripts": {
++    "format": "biome check --write --unsafe --files-ignore-unknown=true .",
++    "format:check": "biome check --files-ignore-unknown=true ."
++  },
+   "devDependencies": {
+-    "prettier": "^3.3.3"
++    "@biomejs/biome": "2.4.15"
+   }
+ }

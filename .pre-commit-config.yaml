@@ -70,9 +70,10 @@ repos:
     rev: "v2.4.15"
     hooks:
       - id: biome-check
-        name: biome
+        name: biome check
         alias: biome
         args: [--unsafe]
+        files: \.(jsx?|tsx?|c(js|ts)|m(js|ts)|d\.(ts|cts|mts)|jsonc?|css|svelte|vue|astro|graphql|gql)$
         priority: 0
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v6.0.0

@@ -1,5 +1,9 @@
 {
+  "scripts": {
+    "format": "biome check --write --unsafe --files-ignore-unknown=true .",
+    "format:check": "biome check --files-ignore-unknown=true ."
+  },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "@biomejs/biome": "2.4.15"
   }
 }
