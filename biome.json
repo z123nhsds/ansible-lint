@@ -9,25 +9,10 @@
   },
   "files": {
     "includes": [
-      "**",
-      "!src/ansiblelint/schemas",
-      "!docs/_static/theme_overrides.css",
-      "!test/schemas/negative_test",
-      "!examples/**/pattern.json"
+      "**"
     ]
   },
   "formatter": {
-    "enabled": true,
-    "indentStyle": "space"
-  },
-  "json": {
-    "formatter": {
-      "enabled": true,
-      "indentStyle": "space"
-    }
-  },
-  "vcs": {
-    "clientKind": "git",
     "enabled": true,
     "useIgnoreFile": true
   }

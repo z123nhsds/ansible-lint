@@ -1,5 +1,11 @@
 {
+  "name": "ansible-lint",
+  "private": true,
+  "scripts": {
+    "format": "biome check --write",
+    "format:check": "biome check"
+  },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "@biomejs/biome": "^1.8.3"
   }
 }

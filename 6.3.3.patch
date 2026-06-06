@@ -1,0 +1,61 @@
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 84dbd7a4..91d518ce 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -73,7 +73,7 @@ repos:
+         name: biome
+         alias: biome
+         args: [--unsafe]
+-        priority: 0
++        types_or: [yaml, markdown, json]
+   - repo: https://github.com/pre-commit/pre-commit-hooks.git
+     rev: v6.0.0
+     hooks:
+diff --git a/biome.json b/biome.json
+index d6d4ebe0..0fcf1448 100644
+--- a/biome.json
++++ b/biome.json
+@@ -9,25 +9,10 @@
+   },
+   "files": {
+     "includes": [
+-      "**",
+-      "!src/ansiblelint/schemas",
+-      "!docs/_static/theme_overrides.css",
+-      "!test/schemas/negative_test",
+-      "!examples/**/pattern.json"
++      "**"
+     ]
+   },
+   "formatter": {
+-    "enabled": true,
+-    "indentStyle": "space"
+-  },
+-  "json": {
+-    "formatter": {
+-      "enabled": true,
+-      "indentStyle": "space"
+-    }
+-  },
+-  "vcs": {
+-    "clientKind": "git",
+     "enabled": true,
+     "useIgnoreFile": true
+   }
+diff --git a/package.json b/package.json
+index c2436a9f..e9b96ff8 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1,11 @@
+ {
++  "name": "ansible-lint",
++  "private": true,
++  "scripts": {
++    "format": "biome check --write",
++    "format:check": "biome check"
++  },
+   "devDependencies": {
+-    "prettier": "^3.3.3"
++    "@biomejs/biome": "^1.8.3"
+   }
+ }

@@ -73,7 +73,7 @@ repos:
         name: biome
         alias: biome
         args: [--unsafe]
-        priority: 0
+        types_or: [yaml, markdown, json]
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v6.0.0
     hooks:
