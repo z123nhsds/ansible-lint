@@ -1,0 +1,71 @@
+diff --git a/6.7.3.patch b/6.7.3.patch
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/dependency_update.patch b/dependency_update.patch
+new file mode 100644
+index 00000000..f2564d0f
+--- /dev/null
++++ b/dependency_update.patch
+@@ -0,0 +1,22 @@
++--- a/.packit.yaml
+++++ b/.packit.yaml
++@@ -28,6 +28,12 @@
++     targets:
++       - fedora-rawhide-x86_64 # one on PR should be enough
++ 
+++  - job: copr_build
+++    trigger: commit
+++    branch: gh-readonly-queue/.*
+++    targets:
+++      - fedora-rawhide-x86_64
+++
++   # - job: tests
++   #   trigger: pull_request
++--- a/mise.toml
+++++ b/mise.toml
++@@ -5,4 +5,4 @@
++ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
++ 
++ [tools]
++-python = "latest"
+++python = "3.13"
+diff --git a/solution.patch b/solution.patch
+new file mode 100644
+index 00000000..0ebcb86a
+--- /dev/null
++++ b/solution.patch
+@@ -0,0 +1,34 @@
++--- a/renovate.json
+++++ b/renovate.json
++@@ -6,6 +6,11 @@
++       "allowedVersions": "<2.17",
++       "description": "Platform compatibility constraint",
++       "matchPackageNames": ["ansible-core"]
++     },
+++    {
+++      "allowedVersions": "<38",
+++      "description": "Platform compatibility constraint",
+++      "matchPackageNames": ["cryptography"]
+++    },
++     {
++       "allowedVersions": "<1.16",
++--- a/.packit.yaml
+++++ b/.packit.yaml
++@@ -28,5 +28,11 @@
++     targets:
++       - fedora-rawhide-x86_64 # one on PR should be enough
++ 
+++  - job: copr_build
+++    trigger: commit
+++    branch: gh-readonly-queue/.*
+++    targets:
+++      - fedora-rawhide-x86_64
+++
++--- a/mise.toml
+++++ b/mise.toml
++@@ -5,4 +5,4 @@
++ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
++ 
++ [tools]
++-python = "latest"
+++python = "3.13"
