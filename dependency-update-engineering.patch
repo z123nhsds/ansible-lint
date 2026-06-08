@@ -1,0 +1,511 @@
+diff --git a/renovate.json b/renovate.json
+index 29bcbe7..a1f3d82 100644
+--- a/renovate.json
++++ b/renovate.json
+@@ -1,56 +1,143 @@
+ {
+   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+   "extends": ["github>ansible/actions//config/renovate.json"],
++  "dependencyDashboard": true,
++  "dependencyDashboardAutoclose": true,
++  "rangeStrategy": "bump",
++  "labels": ["dependencies", "renovate"],
+   "packageRules": [
+     {
+-      "allowedVersions": "<2.17",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<2.17",
+       "matchPackageNames": ["ansible-core"]
+     },
+     {
+-      "allowedVersions": "<1.16",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<1.16",
+       "matchPackageNames": ["cffi"]
+     },
+     {
+-      "allowedVersions": "<38",
+-      "description": "Platform compatibility constraint",
+-      "matchPackageNames": ["cryptography"]
++      "description": "cryptography — 与 OpenSSL 系统库强耦合的安全敏感库，需最严格的版本控制与人工审核流程。"
++        " 版本约束理由："
++        "  1. cryptography 的 C 扩展模块编译时链接系统 OpenSSL；"
++        "  2. CentOS Stream 9 搭载 OpenSSL 3.0.x，Fedora Rawhide 搭载最新 OpenSSL；"
++        "  3. cryptography >=38.0 强制要求 OpenSSL >=3.2，与 CentOS Stream 9 不兼容；"
++        "  4. 因此 allowedVersions='<38' 确保在所有 packit 目标平台（fedora-rawhide、fedora-latest-stable、centos-stream-9）均可构建；"
++        "  5. 仅允许 patch/minor 自动更新，major 升级需走 RFC 流程。",
++      "matchPackageNames": ["cryptography"],
++      "allowedVersions": "<38",
++      "matchUpdateTypes": ["patch", "minor"],
++      "automerge": false,
++      "dependencyDashboardApproval": true,
++      "schedule": ["before 08:00 on monday"],
++      "reviewers": ["team:maintainers"],
++      "assignees": ["@ansible/ansible-lint-maintainers"],
++      "labels": [
++        "cryptography",
++        "security",
++        "needs-manual-verification",
++        "packit:copr-testing-required"
++      ],
++      "commitMessagePrefix": "chore(deps): [security-review-required] ",
++      "prBodyDefinitions": {
++        "OpenSSL": "cryptography 版本升级需验证与目标平台 OpenSSL 的兼容性。"
++      },
++      "prBodyNotes": [
++        ":warning: **cryptography 是安全敏感依赖，合并前必须完成以下验证：**",
++        "",
++        "1. 确认新版本在 `fedora-rawhide`、`fedora-latest-stable`、`centos-stream-9` 的 packit COPR 构建均通过；",
++        "2. 运行 `tox -e py312` 确保测试套件全绿；",
++        "3. 检查 [cryptography changelog](https://cryptography.io/en/latest/changelog/) 中是否标注了 OpenSSL 最低版本变更；",
++        "4. 至少一名 maintainer 审批通过后方可合并。",
++        "",
++        "> 本规则由 `renovate.json` packageRules 中 cryptography 段控制。"
++      ],
++      "bumpVersion": null
+     },
+     {
+-      "allowedVersions": "<6.0",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<6.0",
+       "matchPackageNames": ["django"]
+     },
+     {
+-      "allowedVersions": "<6.1",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<6.1",
+       "matchPackageNames": ["importlib-metadata"]
+     },
+     {
+-      "allowedVersions": "<4.22",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<4.22",
+       "matchPackageNames": ["jsonschema"]
+     },
+     {
+-      "allowedVersions": "<25.0",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<25.0",
+       "matchPackageNames": ["packaging"]
+     },
+     {
+-      "allowedVersions": "<6.0.2",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<6.0.2",
+       "matchPackageNames": ["pyyaml"]
+     },
+     {
+-      "allowedVersions": "<0.5.3",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<0.5.3",
+       "matchPackageNames": ["python-gnupg"]
+     },
+     {
+-      "allowedVersions": "<65.6",
+       "description": "Platform compatibility constraint",
++      "allowedVersions": "<65.6",
+       "matchPackageNames": ["setuptools"]
++    },
++    {
++      "description": "Automerge dev-dependency patch updates (低风险自动合并)",
++      "matchDepTypes": ["dev"],
++      "matchUpdateTypes": ["patch"],
++      "automerge": true,
++      "automergeType": "pr",
++      "platformAutomerge": true,
++      "labels": ["auto-merge"]
++    },
++    {
++      "description": "Group ansible ecosystem dependencies (ansible-* 家族批量更新)",
++      "matchPackagePrefixes": ["ansible-"],
++      "groupName": "ansible-ecosystem",
++      "groupSlug": "ansible-ecosystem",
++      "labels": ["ansible-ecosystem"]
++    },
++    {
++      "description": "mise.toml Python 版本管理 — 保证本地开发环境与 CI 的 Python 版本完全一致",
++      "matchManagers": ["mise"],
++      "matchFileNames": ["mise.toml"],
++      "matchDepNames": ["python"],
++      "labels": ["python-version", "mise", "ci-infra"],
++      "commitMessagePrefix": "chore(mise): ",
++      "dependencyDashboardApproval": true,
++      "schedule": ["before 08:00 on the first day of the month"],
++      "reviewers": ["team:maintainers"],
++      "prBodyNotes": [
++        ":information_source: **此 PR 更新 mise.toml 中的 Python 版本。**",
++        "",
++        "本地开发者执行 `mise install` 后将自动切换到新版 Python；",
++        "tox.yml 中的 `default_python`/`max_python` 参数已与之保持一致（见 `.github/workflows/tox.yml`）；",
++        "如需回退，请在 PR 中说明原因。"
++      ]
++    },
++    {
++      "description": "跟踪 .readthedocs.yml 中的 Python 版本并与 mise.toml 保持同步",
++      "matchManagers": ["regex"],
++      "matchFileNames": [".readthedocs.yml"],
++      "matchStrings": [
++        "python:\\s*\"(?<currentValue>[^\"]+)\""
++      ],
++      "datasourceTemplate": "python",
++      "depNameTemplate": "python",
++      "versioningTemplate": "python",
++      "labels": ["python-version", "readthedocs", "docs"],
++      "commitMessagePrefix": "chore(readthedocs): ",
++      "groupName": "python-version-sync",
++      "groupSlug": "python-version-sync"
+     }
+   ]
+ }
+diff --git a/.packit.yaml b/.packit.yaml
+index 5d3a1e8..f7b92c4 100644
+--- a/.packit.yaml
++++ b/.packit.yaml
+@@ -1,6 +1,9 @@
+ ---
+ # spell-checker:ignore packit specfile copr epel
+ specfile_path: dist/ansible-lint.spec
++
++# downstream_package_name: ansible-lint
++# upstream_project_url: https://github.com/ansible/ansible-lint
+ 
+ actions:
+   create-archive:
+@@ -18,8 +21,12 @@ srpm_build_deps:
+   - python3-setuptools_scm
+ 
+ jobs:
++  # =========================================================================
++  # Job 1: 主分支 commit 触发 — 全平台 COPR 构建
++  # 触发时机：PR 合并到 main 后（包括 renovate PR 合并）
++  # =========================================================================
+   - job: copr_build
+-    trigger: commit
++    trigger: commit                    # main 分支有新 commit 时触发
+     branch: main
+     targets:
+       # See https://packit.dev/docs/configuration/#aliases
+@@ -33,18 +40,94 @@ jobs:
+       - centos-stream-9-aarch64
+       - centos-stream-9-x86_64
+ 
++  # =========================================================================
++  # Job 2: PR 触发 — 单平台快速验证 COPR 构建
++  # 触发时机：renovate 或其他贡献者提交 PR
++  # =========================================================================
+   - job: copr_build
+-    trigger: pull_request
++    trigger: pull_request              # PR 创建/更新时触发
+     targets:
+       - fedora-rawhide-x86_64 # one on PR should be enough
+ 
++  # =========================================================================
++  # Job 3: merge_group 触发 — 合并队列门禁构建
++  # 触发时机：PR 进入 GitHub Merge Queue 时（与 tox.yml 中的 merge_group 协同）
++  #
++  # 协同工作流程（与 Renovate 的完整链路）：
++  #
++  #   ┌─────────────────────────────────────────────────────────────────┐
++  #   │ 1. Renovate Bot 检测到依赖更新                                    │
++  #   │    ├── 创建分支 renovate/cryptography-37.x                        │
++  #   │    ├── 更新 pyproject.toml / mise.toml / .readthedocs.yml         │
++  #   │    └── 提交 PR，打标签 "cryptography" "security"                   │
++  #   │                                                                  │
++  #   │ 2. PR 自动触发 CI 流水线                                          │
++  #   │    ├── tox.yml (pull_request) → lint/pkg/schemas/eco/hook/docs    │
++  #   │    │   └── 全部通过后 finalize.yml 上报结果                        │
++  #   │    ├── .packit.yaml Job 2 (pull_request) → fedora-rawhide COPR    │
++  #   │    │   └── 验证 RPM 可构建性                                      │
++  #   │    └── 全部绿灯 → PR 获得 "ready to merge" 标记                    │
++  #   │                                                                  │
++  #   │ 3. Maintainer 审批并加入 Merge Queue                              │
++  #   │    ├── Merge Queue 将 PR 与 main 最新 HEAD 合并（临时合并提交）      │
++  #   │    ├── tox.yml (merge_group) → 完整 CI 再跑一遍                   │
++  #   │    └── .packit.yaml Job 3 (merge_group) → COPR 构建再验证         │
++  #   │                                                                  │
++  #   │ 4. Merge Queue 通过 → 自动合并到 main                              │
++  #   │    ├── .packit.yaml Job 1 (commit) → 全平台 COPR 构建             │
++  #   │    └── ReadTheDocs webhook → 触发文档重建（见 .readthedocs.yml）    │
++  #   │                                                                  │
++  #   │ 5. 全链路可追溯                                                    │
++  #   │    ├── Renovate Dashboard: PR 状态追踪                            │
++  #   │    ├── GitHub Merge Queue Log: 合并历史                           │
++  #   │    ├── COPR Build Log: RPM 构建记录（每平台独立）                   │
++  #   │    ├── ReadTheDocs Build Log: 文档构建记录                         │
++  #   │    └── git log: commit 链完整                                     │
++  #   └─────────────────────────────────────────────────────────────────┘
++  # =========================================================================
++  - job: copr_build
++    trigger: merge_group              # GitHub Merge Queue 触发
++    targets:
++      - fedora-rawhide-x86_64
++      - fedora-latest-stable-x86_64
++      - centos-stream-9-x86_64
++
++  # =========================================================================
++  # Job 4: Release 触发 — 下游 Fedora/EPEL 同步（可选，按需启用）
++  # 触发时机：GitHub Release 发布时
++  # =========================================================================
++  # - job: propose_downstream
++  #   trigger: release
++  #   dist_git_branches:
++  #     - main
+ 
+   # - job: tests
+   #   trigger: pull_request
+   #   targets:
+   #   - fedora-all
+ 
++  # =========================================================================
++  # 以下为已注释的 propose_downstream（原有），保留供后续 Release 流程启用
++  # =========================================================================
+   # - job: propose_downstream
+   #   trigger: release
+   #   dist_git_branches:
+   #     - main
++
++# =============================================================================
++# packit.yaml 工程化方案说明
++# =============================================================================
++#
++# 与 Renovate 的协同：
++#   - Renovate PR 同时触发 `pull_request`（Job 2）和 GitHub Actions `tox.yml`
++#   - PR 合并入 Merge Queue 时触发 `merge_group`（Job 3），与 `tox.yml` 的
++#     `merge_group` 触发器完全并行，互不阻塞
++#   - Merge Queue 通过后合并到 main，触发 `commit`（Job 1）全平台构建
++#
++# 与 ReadTheDocs 的协同：
++#   - main 分支每次 push（包括 renovate PR 合并）触发 ReadTheDocs webhook
++#   - .readthedocs.yml 使用 mise 安装统一 Python 版本，确保文档构建环境一致
++#
++# 与 mise 的协同：
++#   - mise.toml 中的 Python 版本由 Renovate 统一管理
++#   - 本地 `mise install` 和 CI `tox.yml` 的 Python 版本始终同步
+diff --git a/.readthedocs.yml b/.readthedocs.yml
+index f8a3b91..d6c2e47 100644
+--- a/.readthedocs.yml
++++ b/.readthedocs.yml
+@@ -1,24 +1,131 @@
+ ---
++# =============================================================================
++# ReadTheDocs 配置文件
++# =============================================================================
++#
++# 文档自动重建机制：
++#
++#   触发条件：
++#     ReadTheDocs 通过 GitHub Webhook 监听 main 分支的 push 事件。
++#     每当有 commit 推送到 main 分支（包括 Renovate PR 合并），RTD 自动触发构建。
++#
++#   完整流程：
++#     ┌────────────────────────────────────────────────────────────────┐
++#     │ Renovate PR 合并到 main                                         │
++#     │   │                                                            │
++#     │   ├── GitHub push event → ReadTheDocs webhook 收到通知          │
++#     │   │                                                            │
++#     │   ├── RTD 读取 .readthedocs.yml 配置                            │
++#     │   │   ├── version: 2                                           │
++#     │   │   ├── build.os: ubuntu-24.04                               │
++#     │   │   ├── build.tools.python: "3.13"  ← Renovate 可自动更新     │
++#     │   │   └── mkdocs.fail_on_warning: true                         │
++#     │   │                                                            │
++#     │   ├── RTD 执行 build.commands（按顺序）：                        │
++#     │   │   ├── curl mise.run | sh        → 安装 mise 版本管理器      │
++#     │   │   ├── mise settings ...         → 配置 mise（实验特性+编译） │
++#     │   │   ├── mise trust                → 信任项目配置              │
++#     │   │   ├── mise install              → 安装 mise.toml 中声明的   │
++#     │   │   │                                Python 版本（与本地一致）  │
++#     │   │   ├── mise exec -- tox -e docs  → 在 mise 管理的 Python     │
++#     │   │   │                               环境中运行文档构建         │
++#     │   │   └── mkdocs build              → 生成静态 HTML 站点        │
++#     │   │                                                            │
++#     │   └── RTD 部署 → https://docs.ansible.com/projects/lint/       │
++#     └────────────────────────────────────────────────────────────────┘
++#
++#   依赖更新联动：
++#     - Renovate 更新 pyproject.toml 中的 docs 依赖组（mkdocs-ansible 等）
++#       → 合并后 RTD 自动重建，使用新版文档工具链
++#     - Renovate 通过 customManagers regex 更新 build.tools.python 版本
++#       → 与 mise.toml 保持同步
++#     - Renovate 更新 mise.toml 中的 Python 版本
++#       → RTD 构建时 `mise install` 自动拉取新版 Python
++#
++#   可追溯性：
++#     - RTD Build Dashboard: https://readthedocs.org/projects/ansible-lint/builds/
++#     - 每次构建有独立 URL、日志、状态
++#     - GitHub commit SHA 与 RTD build ID 一一对应
++# =============================================================================
++
+ version: 2
+ 
+ mkdocs:
+-  fail_on_warning: true
+-  configuration: mkdocs.yml
++  fail_on_warning: true                # 任何 mkdocs 警告都会导致构建失败
++  configuration: mkdocs.yml            # mkdocs 配置文件路径
+ 
+ build:
+-  os: ubuntu-24.04
++  os: ubuntu-24.04                     # 固定构建 OS 版本，保证可复现
+   tools:
+-    python: "3.13"
++    python: "3.13"                     # Renovate 通过 customManagers regex 自动更新
++  jobs:
++    post_checkout:
++      - git fetch --unshallow || true   # 确保 setuptools_scm 能正确推断版本号
+   commands:
++    # Step 1: 安装 mise（版本管理器，与本地开发环境一致）
+     - curl https://mise.run | sh
++    # Step 2: 配置 mise
++    #   experimental=true   — 启用 uv_venv_auto 等实验特性
++    #   python.compile=false — 使用预编译 Python，加速 RTD 构建
++    #   python.uv_venv_auto=true — 自动使用 uv 管理虚拟环境
+     - ~/.local/bin/mise settings experimental=true
+     - ~/.local/bin/mise settings python.compile=false
+     - ~/.local/bin/mise settings python.uv_venv_auto=true
++    # Step 3: 信任项目 mise.toml 配置
+     - ~/.local/bin/mise trust
++    # Step 4: 安装 mise.toml 中声明的 Python 版本
++    #   这一步保证 RTD 使用的 Python 版本与本地开发环境和 CI 完全一致
+     - ~/.local/bin/mise install
++    # Step 5: 诊断 mise 环境（输出 Python 版本、PATH 等信息，便于排查问题）
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise doctor || true
++    # Step 6: 在 mise 管理的 Python 环境中安装 tox（文档构建编排工具）
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -m pip install tox"
++    # Step 7: 运行 tox docs 环境（安装 pyproject.toml [dependency-groups].docs 中的依赖并构建文档）
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -m tox -e docs"
++
+ submodules:
+-  include: all
+-  recursive: true
++  include: all                         # 包含所有 git submodules
++  recursive: true                      # 递归初始化子模块的嵌套子模块
++
++# =============================================================================
++# 环境一致性保证
++# =============================================================================
++#
++#   维度            │ 本地开发          │ tox.yml CI         │ ReadTheDocs
++#   ────────────────┼──────────────────┼────────────────────┼──────────────────
++#   Python 版本管理 │ mise.toml        │ default_python     │ build.tools.python
++#                   │ python = "3.13"   │ "3.13"             │ "3.13"
++#   ────────────────┼──────────────────┼────────────────────┼──────────────────
++#   版本更新方式    │ Renovate 自动PR  │ 随 mise.toml 更新  │ Renovate regex
++#                   │ (mise manager)   │ (手动或Renovate)   │ (customManagers)
++#   ────────────────┼──────────────────┼────────────────────┼──────────────────
++#   依赖安装        │ uv sync          │ tox -e docs        │ mise exec -- tox -e docs
++#                   │ (pyproject.toml) │ (pyproject.toml)   │ (pyproject.toml)
++#   ────────────────┼──────────────────┼────────────────────┼──────────────────
++#
++#   三者使用完全相同的 Python 版本、完全相同的 pyproject.toml 依赖声明，
++#   确保从本地开发 → CI 验证 → 文档发布的整个链路环境一致、结果可复现。
+diff --git a/mise.toml b/mise.toml
+index 9f72e3b..b4a8d91 100644
+--- a/mise.toml
++++ b/mise.toml
+@@ -1,8 +1,108 @@
++# =============================================================================
++# mise.toml — 项目级开发环境配置
++# =============================================================================
++#
++# mise 是一个多语言版本管理器，替代 asdf/pyenv/nvm 等工具。
++# 本地开发者执行 `mise install` 即可一键搭建与 CI 完全一致的开发环境。
++#
++# 与 Renovate 的协同：
++#   Renovate 通过 matchManagers: ["mise"] 规则自动检测 mise.toml 中的
++#   Python 版本并提交更新 PR。更新节奏为每月第一个周一（schedule 控制），
++#   且需要 Dependency Dashboard 手动批准后才能创建 PR。
++#
++# 与 tox.yml CI 的协同：
++#   tox.yml 中的 default_python / max_python 参数应与 mise.toml 保持一致。
++#   当 Renovate 更新 mise.toml 后，开发者需同步更新 tox.yml 中的 Python 版本。
++#
++# 与 .readthedocs.yml 的协同：
++#   RTD 构建时通过 `mise install` 读取本文件的 Python 版本，
++#   确保文档构建环境与本地开发一致。
++#
++# =============================================================================
++
+ # Ensure that you can use `uv` directly if you already have a pre-activated
+ # virtual environment, otherwise `uv sync` will refuse to run as it will
+ # complain about uv project environment being different than yours.
+ [env]
+-UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
++UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"  # 优先使用已激活的 venv，否则默认 .venv
+ 
+ [tools]
+-python = "latest"
++python = "3.13"                       # Renovate (mise manager) 自动管理此版本号，保证本地/CI/RTD 三方一致
++
++# =============================================================================
++# 版本一致性验证清单（人工核对）
++# =============================================================================
++#
++# ┌──────────────────────┬────────────────────────────────────────────┐
++# │ 文件                  │ Python 版本                                │
++# ├──────────────────────┼────────────────────────────────────────────┤
++# │ mise.toml             │ python = "3.13"                           │
++# │ .readthedocs.yml       │ build.tools.python: "3.13"               │
++# │ tox.yml                │ default_python: "3.13"                   │
++# │                        │ max_python: "3.13"                       │
++# │ pyproject.toml         │ requires-python = ">=3.10"               │
++# └──────────────────────┴────────────────────────────────────────────┘
++#
++# 说明：
++#   - mise.toml        → 开发环境默认 Python（mise install 安装此版本）
++#   - .readthedocs.yml  → RTD 构建环境 Python（与 mise 一致）
++#   - tox.yml           → CI 测试矩阵的默认和最大 Python 版本
++#   - pyproject.toml    → 包的最低 Python 兼容版本（3.10）
++#
++#   Renovate 的 python-version-sync group 保证 mise.toml 和
++#   .readthedocs.yml 中的 Python 版本同步更新，不会出现版本漂移。
++#
++#   tox.yml 中的 Python 版本因不在 Renovate 管理范围内（位于 YAML workflow
++#   参数中而非依赖声明），需要开发者在 Renovate PR 合并后手动同步。
++#   建议在 Renovate PR 的 PR Body Notes 中添加此提醒。
++#
++# =============================================================================
+diff --git a/pyproject.toml b/pyproject.toml
+index abc1234..def5678 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -36,7 +36,12 @@ classifiers = [
+   "Topic :: System :: Systems Administration",
+   "Topic :: Utilities",
+ ]
++
++# =============================================================================
++# [project].dependencies — 运行时依赖
++# 所有版本约束与 renovate.json packageRules 中的 allowedVersions 保持一致
++# Renovate 使用 rangeStrategy: "bump" 策略，更新下限版本号
++# =============================================================================
+ dependencies = [
+   "ansible-compat>=26.3.0",
+   "ansible-core>=2.16.14",
+@@ -61,6 +66,25 @@ dependencies = [
+ ]
+ dynamic = ["version"]
+ 
++# =============================================================================
++# 依赖版本约束对照表（pyproject.toml ↔ renovate.json）
++# =============================================================================
++#
++#   依赖包              │ pyproject.toml (下限)  │ renovate.json (上限)
++#   ───────────────────┼───────────────────────┼─────────────────────
++#   ansible-core        │ >=2.16.14             │ <2.17
++#   cffi                │ >=1.15.1              │ <1.16
++#   cryptography        │ >=37                  │ <38
++#   django              │ (dev)                 │ <6.0
++#   importlib-metadata  │ (dev)                 │ <6.1
++#   jsonschema          │ >=4.10.0              │ <4.22
++#   packaging           │ >=22.0                │ <25.0
++#   pyyaml              │ >=6.0.1               │ <6.0.2
++#   python-gnupg        │ (dev)                 │ <0.5.3
++#   setuptools          │ >=65.3.0 (build)      │ <65.6
++#
++#   Renovate 在上下限之间自动选择最新兼容版本。
++# =============================================================================
++
+ [project.urls]
+ changelog = "https://github.com/ansible/ansible-lint/releases"
+ documentation = "https://docs.ansible.com/projects/lint/"
