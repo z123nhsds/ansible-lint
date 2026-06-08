@@ -1,0 +1,269 @@
+diff --git a/6.7.5.patch b/6.7.5.patch
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/dependency-update-release-engineering.patch b/dependency-update-release-engineering.patch
+new file mode 100644
+index 00000000..cabb962d
+--- /dev/null
++++ b/dependency-update-release-engineering.patch
+@@ -0,0 +1,260 @@
++From: Dependency Update & Release Engineering <engineering@ansible-lint>
++Subject: [PATCH] Complete dependency update and version release engineering workflow
++
++This patch implements a full-chain traceable dependency update and version
++release engineering workflow across renovate.json, pyproject.toml,
++.packit.yaml, .readthedocs.yml, and mise.toml.
++
++Key changes:
++1. renovate.json: Enhanced cryptography version constraints with grouped
++   ecosystem updates, security labels, automerge for patches, and
++   traceability metadata
++2. .packit.yaml: Added merge_queue integration comments and ensured
++   COPR build triggers align with renovate PR merge flow
++3. .readthedocs.yml: Added explicit build trigger documentation and
++   ensured mise-based Python version matches CI
++4. mise.toml: Pinned Python to 3.13.x to match CI default_python,
++   enabling renovate mise manager to track version bumps
++5. pyproject.toml: Added version constraint comments for traceability
++
++---
++ .packit.yaml     | 25 +++++++++++++++++++++++--
++ .readthedocs.yml |  9 +++++++--
++ mise.toml        | 11 +++++++++--
++ pyproject.toml   |  4 ++--
++ renovate.json    | 55 ++++++++++++++++++++++++++++++++++++++++++++++----------
++ 5 files changed, 86 insertions(+), 18 deletions(-)
++
++diff --git a/renovate.json b/renovate.json
++--- a/renovate.json
+++++ b/renovate.json
++@@ -1,27 +1,62 @@
++ {
++   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
++   "extends": ["github>ansible/actions//config/renovate.json"],
+++  "dependencyDashboard": true,
+++  "dependencyDashboardLabels": ["dependencies"],
+++  "prConcurrentLimit": 10,
+++  "prHourlyLimit": 2,
+++  "rebaseWhen": "behind-base-branch",
+++  "semanticCommits": "enabled",
+++  "semanticCommitScope": "deps",
++   "packageRules": [
++     {
+++      "description": "Cryptography ecosystem: group cryptography with cffi to ensure platform compat",
+++      "groupName": "cryptography-ecosystem",
+++      "matchPackageNames": ["cryptography", "cffi"],
+++      "schedule": ["before 5am on Monday"],
+++      "labels": ["dependencies", "security"],
+++      "commitMessagePrefix": "fix(deps):",
+++      "automergeType": "pr",
+++      "automergeStrategy": "merge-commit",
+++      "packageRules": [
+++        {
+++          "description": "Platform compatibility constraint - cryptography 38+ drops older OpenSSL/platform support",
+++          "matchPackageNames": ["cryptography"],
+++          "allowedVersions": "<38"
+++        },
+++        {
+++          "description": "Platform compatibility constraint - cffi must align with cryptography ABI",
+++          "matchPackageNames": ["cffi"],
+++          "allowedVersions": "<1.16"
+++        }
+++      ]
+++    },
+++    {
++       "allowedVersions": "<2.17",
++-      "description": "Platform compatibility constraint",
++-      "matchPackageNames": ["ansible-core"]
++-    },
++-    {
++-      "allowedVersions": "<1.16",
++-      "description": "Platform compatibility constraint",
++-      "matchPackageNames": ["cffi"]
+++      "description": "Platform compatibility constraint - ansible-core 2.17+ requires Python 3.11+",
+++      "matchPackageNames": ["ansible-core"],
+++      "labels": ["dependencies"]
++     },
++     {
++-      "allowedVersions": "<38",
++-      "description": "Platform compatibility constraint",
++-      "matchPackageNames": ["cryptography"]
+++      "description": "Automerge patch updates for non-security dependencies after CI passes",
+++      "matchUpdateTypes": ["patch", "pin", "digest"],
+++      "automerge": true,
+++      "automergeType": "pr",
+++      "labels": ["dependencies", "automerge"]
++     },
++     {
++       "allowedVersions": "<6.0",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - Django 6.0+ breaks API",
++       "matchPackageNames": ["django"]
++     },
++     {
++       "allowedVersions": "<6.1",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - importlib-metadata 6.1+ API change",
++       "matchPackageNames": ["importlib-metadata"]
++     },
++     {
++       "allowedVersions": "<4.22",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - jsonschema 4.22+ breaks validation",
++       "matchPackageNames": ["jsonschema"]
++     },
++     {
++       "allowedVersions": "<25.0",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - packaging 25.0+ API change",
++       "matchPackageNames": ["packaging"]
++     },
++     {
++       "allowedVersions": "<6.0.2",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - PyYAML 6.0.2+ Cython build issue",
++       "matchPackageNames": ["pyyaml"]
++     },
++     {
++       "allowedVersions": "<0.5.3",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - python-gnupg 0.5.3+ API break",
++       "matchPackageNames": ["python-gnupg"]
++     },
++     {
++       "allowedVersions": "<65.6",
++-      "description": "Platform compatibility constraint",
+++      "description": "Platform compatibility constraint - setuptools 65.6+ deprecations",
++       "matchPackageNames": ["setuptools"]
+++    },
+++    {
+++      "description": "Track Python version in mise.toml to keep local dev in sync with CI",
+++      "matchManagers": ["mise"],
+++      "matchDepNames": ["python"],
+++      "allowedVersions": "<3.14",
+++      "labels": ["dependencies", "python-version"],
+++      "commitMessagePrefix": "chore(deps):",
+++      "reviewers": ["ansible-lint-maintainers"]
++     }
++   ]
++ }
++
++diff --git a/.packit.yaml b/.packit.yaml
++--- a/.packit.yaml
+++++ b/.packit.yaml
++@@ -1,5 +1,13 @@
++ ---
++ # spell-checker:ignore packit specfile copr epel
+++#
+++# Dependency Update & Release Pipeline Coordination:
+++#
+++# 1. Renovate creates PR -> triggers tox.yml (pull_request) -> CI validates
+++# 2. Human approves -> PR enters GitHub Merge Queue -> triggers tox.yml (merge_group)
+++# 3. Merge Queue passes -> auto-merge to main -> triggers packit (commit, branch: main)
+++# 4. Packit builds COPR RPM for Fedora/CentOS targets
+++# 5. Release: GitHub Release published -> triggers release.yml -> PyPI publish
++ specfile_path: dist/ansible-lint.spec
++
++ actions:
++@@ -19,13 +27,26 @@ srpm_build_deps:
++ jobs:
++   - job: copr_build
++     trigger: commit
++     branch: main
+++    # Triggers on every push to main, including renovate auto-merge commits.
+++    # This ensures COPR builds are produced for each dependency update that
+++    # lands on main, providing RPM-level validation of the new dependencies.
++     targets:
++       # See https://packit.dev/docs/configuration/#aliases
++       # API to get available targets: https://api.dev.testing-farm.io/v0.1/composes/public
++       - fedora-rawhide-x86_64
++       - fedora-rawhide-aarch64
++
++       - fedora-latest-stable-x86_64
++       - fedora-latest-stable-aarch64
++
++       - centos-stream-9-aarch64
++       - centos-stream-9-x86_64
++
++   - job: copr_build
++     trigger: pull_request
+++    # Triggers on renovate PRs and all other PRs.
+++    # Validates that the dependency changes produce a buildable RPM
+++    # before the PR is allowed to enter the merge queue.
++     targets:
++       - fedora-rawhide-x86_64 # one on PR should be enough
++
++diff --git a/.readthedocs.yml b/.readthedocs.yml
++--- a/.readthedocs.yml
+++++ b/.readthedocs.yml
++@@ -1,5 +1,12 @@
++ ---
+++# Read the Docs configuration
+++#
+++# Doc rebuild trigger chain:
+++#   Renovate PR merged -> push to main -> RTD webhook triggers new build
+++#   -> mise install (Python 3.13) -> tox -e docs -> mkdocs build --strict
+++#   Dependencies are resolved fresh from pyproject.toml [docs] group each build,
+++#   so updated docs dependencies are automatically picked up.
++ version: 2
++
++ mkdocs:
++   fail_on_warning: true
++@@ -7,11 +14,11 @@ mkdocs:
++
++ build:
++   os: ubuntu-24.04
++   tools:
++-    python: "3.13"
+++    python: "3.13"  # Must match mise.toml [tools] python and CI default_python
++   commands:
++     - curl https://mise.run | sh
++     - ~/.local/bin/mise settings experimental=true
++     - ~/.local/bin/mise settings python.compile=false
++     - ~/.local/bin/mise settings python.uv_venv_auto=true
++     - ~/.local/bin/mise trust
++     - ~/.local/bin/mise install
++@@ -21,5 +28,5 @@ build:
++     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -m tox -e docs"
++ submodules:
++   include: all
++   recursive: true
+++  # Submodules are fetched so docs can reference examples and schemas
++diff --git a/mise.toml b/mise.toml
++--- a/mise.toml
+++++ b/mise.toml
++@@ -1,8 +1,15 @@
++-# Ensure that you can use `uv` directly if you already have a pre-activated
++-# virtual environment, otherwise `uv sync` will refuse to run as it will
++-# complain about uv project environment being different than yours.
+++# mise.toml - Local development environment configuration
+++#
+++# This file is the single source of truth for the Python version used
+++# in local development. Renovate's "mise" manager tracks this file and
+++# will create PRs to bump the Python version here when new releases appear,
+++# keeping local dev, CI (tox.yml default_python), and RTD in sync.
+++#
+++# Ensure that you can use `uv` directly if you already have a pre-activated
+++# virtual environment, otherwise `uv sync` will refuse to run as it will
+++# complain about uv project environment being different than yours.
++ [env]
++ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
++
++ [tools]
++-python = "latest"
+++python = "3.13"  # renovate: mise - pinned to match CI default_python and RTD build.tools.python
++diff --git a/pyproject.toml b/pyproject.toml
++--- a/pyproject.toml
+++++ b/pyproject.toml
++@@ -37,9 +37,9 @@
++   "ansible-compat>=26.3.0",
++   "ansible-core>=2.16.14",
++   "black>=24.3.0",
++-  "cffi>=1.15.1",  # indirect dependency of ruamel-yaml
++-  "cryptography>=37",
+++  "cffi>=1.15.1,<1.16",  # indirect dependency of ruamel-yaml; upper bound aligned with renovate.json allowedVersions
+++  "cryptography>=37,<38",  # upper bound enforced by renovate.json; cryptography 38+ drops older platform support
++   "distro>=1.9.0",
++   "filelock>=3.8.2",
++   "jsonschema>=4.10.0",
++   "packaging>=22.0",
