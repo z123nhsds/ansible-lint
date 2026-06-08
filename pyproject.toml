@@ -6,7 +6,7 @@ name = "ansible-lint"
 description = "Checks playbooks for practices and behavior that could potentially be improved"
 readme = "README.md"
 # https://peps.python.org/pep-0621/#readme
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 license = "GPL-3.0-or-later"
 authors = [{ "name" = "Will Thames", "email" = "will@thames.id.au" }]
 maintainers = [{ "name" = "Ansible by Red Hat", "email" = "info@ansible.com" }]
@@ -186,7 +186,7 @@ exclude_gitignore = true
 follow_untyped_imports = true
 incremental = false
 no_implicit_optional = true
-python_version = "3.12"
+python_version = "3.14"
 show_error_code_links = true
 strict = true
 warn_redundant_casts = true
@@ -296,7 +296,7 @@ fix = true
 # Same as Black.
 line-length = 88
 preview = true
-target-version = "py310"
+target-version = "py314"
 
 [tool.ruff.lint]
 ignore = [

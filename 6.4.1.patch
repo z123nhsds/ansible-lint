@@ -1,0 +1,72 @@
+diff --git a/.github/workflows/tox.yml b/.github/workflows/tox.yml
+index 7ba9974e..aaced983 100644
+--- a/.github/workflows/tox.yml
++++ b/.github/workflows/tox.yml
+@@ -26,8 +26,8 @@ jobs:
+     secrets: inherit
+     with:
+       min_python: "3.10"
+-      default_python: "3.13"
+-      max_python: "3.13"
++      default_python: "3.14"
++      max_python: "3.14"
+       other_names: |
+         lint-pkg-schemas-eco:tox -e lint;tox -e pkg;tox -e schemas;tox -e eco
+         hook
+diff --git a/mise.toml b/mise.toml
+index 65f0e14b..59bf4d59 100644
+--- a/mise.toml
++++ b/mise.toml
+@@ -5,4 +5,4 @@
+ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
+ 
+ [tools]
+-python = "latest"
++python = "3.14"
+diff --git a/pyproject.toml b/pyproject.toml
+index 15c1dc4b..e945f7d0 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -6,7 +6,7 @@ name = "ansible-lint"
+ description = "Checks playbooks for practices and behavior that could potentially be improved"
+ readme = "README.md"
+ # https://peps.python.org/pep-0621/#readme
+-requires-python = ">=3.10"
++requires-python = ">=3.14"
+ license = "GPL-3.0-or-later"
+ authors = [{ "name" = "Will Thames", "email" = "will@thames.id.au" }]
+ maintainers = [{ "name" = "Ansible by Red Hat", "email" = "info@ansible.com" }]
+@@ -186,7 +186,7 @@ exclude_gitignore = true
+ follow_untyped_imports = true
+ incremental = false
+ no_implicit_optional = true
+-python_version = "3.12"
++python_version = "3.14"
+ show_error_code_links = true
+ strict = true
+ warn_redundant_casts = true
+@@ -296,7 +296,7 @@ fix = true
+ # Same as Black.
+ line-length = 88
+ preview = true
+-target-version = "py310"
++target-version = "py314"
+ 
+ [tool.ruff.lint]
+ ignore = [
+diff --git a/renovate.json b/renovate.json
+index 2e150889..3d7a2c75 100644
+--- a/renovate.json
++++ b/renovate.json
+@@ -51,6 +51,11 @@
+       "allowedVersions": "<65.6",
+       "description": "Platform compatibility constraint",
+       "matchPackageNames": ["setuptools"]
++    },
++    {
++      "description": "Enforce Python 3.14 compatibility",
++      "matchManagers": ["python-version"],
++      "allowedVersions": "<=3.14"
+     }
+   ]
+ }

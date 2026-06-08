@@ -26,8 +26,8 @@ jobs:
     secrets: inherit
     with:
       min_python: "3.10"
-      default_python: "3.13"
-      max_python: "3.13"
+      default_python: "3.14"
+      max_python: "3.14"
       other_names: |
         lint-pkg-schemas-eco:tox -e lint;tox -e pkg;tox -e schemas;tox -e eco
         hook
