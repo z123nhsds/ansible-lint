@@ -617,8 +617,7 @@ commands = [
       "--junitxml=./junit.xml"
     ], extend = true, replace = "posargs" }
   ],
-  ["coverage", "combine", "-q"],
-  ["coverage", "xml", "-o", "{env_dir}/coverage.xml", "--fail-under=0"],
+  ["bash", "./tools/report-coverage"],
   ["coverage", "lcov", "-q", "--fail-under=0"],
   ["coverage", "report"]
 ]
@@ -657,6 +656,7 @@ runner = "uv-venv-lock-runner"
 COVERAGE_COMBINED = "{env_dir}/.coverage"
 COVERAGE_FILE = "{env:COVERAGE_FILE:{env_dir}/.coverage.{env_name}}"
 COVERAGE_PROCESS_START = "{tox_root}/pyproject.toml"
+COVERAGE_XML = "{env:COVERAGE_XML:{env_dir}/coverage.xml}"
 FORCE_COLOR = "1"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 PRE_COMMIT_COLOR = "always"

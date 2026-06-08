@@ -1,4 +1,7 @@
 ---
+codecov:
+  notify:
+    after_n_builds: 4
 comment: false
 coverage:
   status:

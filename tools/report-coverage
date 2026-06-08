@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+artifacts_dir="${1:-.}"
+combined_file="${COVERAGE_COMBINED:-$PWD/.coverage}"
+xml_file="${COVERAGE_XML:-$PWD/coverage.xml}"
+
+coverage_files=()
+while IFS= read -r path; do
+  if [ "$path" != "$combined_file" ]; then
+    coverage_files+=("$path")
+  fi
+done < <(
+  find "$artifacts_dir" -type f \
+    \( -name '.coverage' -o -name '.coverage.*' -o -name 'coverage.*' \) \
+    ! -name '*.xml' \
+    ! -name '*.lcov' \
+    | sort
+)
+
+if [ "${#coverage_files[@]}" -gt 0 ]; then
+  mkdir -p "$(dirname "$combined_file")"
+  COVERAGE_FILE="$combined_file" coverage erase
+  coverage combine --keep --data-file "$combined_file" "${coverage_files[@]}"
+elif [ ! -f "$combined_file" ]; then
+  echo "No coverage data files found in $artifacts_dir" >&2
+  exit 1
+fi
+
+mkdir -p "$(dirname "$xml_file")"
+COVERAGE_FILE="$combined_file" coverage xml -o "$xml_file" --fail-under=0

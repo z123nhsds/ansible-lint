@@ -7,14 +7,16 @@ import sys
 import warnings
 from importlib.util import find_spec
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-# Ensure we always run from the root of the repository
+if TYPE_CHECKING:
+    from _pytest.config.argparsing import Parser
+
 if Path.cwd() != Path(__file__).parent:
     os.chdir(Path(__file__).parent)
 
-# checking if user is running pytest without installing test dependencies:
 missing = [module for module in ["ansible", "black", "mypy"] if not find_spec(module)]
 if missing:
     pytest.exit(
@@ -23,19 +25,28 @@ if missing:
     )
 
 
+def pytest_addoption(parser: "Parser") -> None:
+    """Add --coverage-file option to pytest."""
+    parser.addoption(
+        "--coverage-file",
+        action="store",
+        default=os.environ.get("COVERAGE_FILE", ""),
+        help="Path used for coverage data output.",
+    )
+
+
 # See: https://github.com/pytest-dev/pytest/issues/1402#issuecomment-186299177
 def pytest_configure(config: pytest.Config) -> None:
     """Ensure we run preparation only on master thread when running in parallel."""
+    coverage_file = config.getoption("--coverage-file")
+    if coverage_file:
+        coverage_path = Path(coverage_file).expanduser()
+        coverage_path.parent.mkdir(parents=True, exist_ok=True)
+        os.environ["COVERAGE_FILE"] = str(coverage_path)
     if is_help_option_present(config):
         return
     if is_master(config):
-        # linter should be able de detect and convert some deprecation warnings
-        # into validation errors but during testing we disable this to avoid
-        # unnecessary noise. Still, we might want to enable it for particular
-        # tests, for testing our ability to detect deprecations.
         os.environ["ANSIBLE_DEPRECATION_WARNINGS"] = "False"
-        # we need to be sure that we have the requirements installed as some tests
-        # might depend on these. This approach is compatible with GHA caching.
         try:
             subprocess.check_output(
                 ["./tools/install-reqs.sh"],
@@ -63,8 +74,6 @@ from ansible.module_utils.common.yaml import (  # pylint: disable=wrong-import-p
 )
 
 if not HAS_LIBYAML:
-    # While presence of libyaml is not required for runtime, we keep this error
-    # fatal here in order to be sure that we spot libyaml errors during testing.
     arch = platform.machine()
     if arch not in ("arm64", "x86_64"):
         warnings.warn(
