@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+TOX_ENV_DIR="${1:-${TOX_ENV_DIR:-.}}"
+
+cd "${TOX_ENV_DIR}"
+
+echo "Coverage report for: ${TOX_ENV_NAME:-unknown}"
+
+python -m coverage report --fail-under=0

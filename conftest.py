@@ -23,11 +23,28 @@ if missing:
     )
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add options for controlling coverage data file output in parallel sharding."""
+    parser.addoption(
+        "--cov-data-file",
+        action="store",
+        default=None,
+        help="Override COVERAGE_FILE environment variable to control coverage "
+        "data file output path. Used in parallel test sharding to ensure each "
+        "shard writes to a unique coverage data file that can be merged later.",
+    )
+
+
 # See: https://github.com/pytest-dev/pytest/issues/1402#issuecomment-186299177
 def pytest_configure(config: pytest.Config) -> None:
     """Ensure we run preparation only on master thread when running in parallel."""
     if is_help_option_present(config):
         return
+
+    cov_data_file = config.getoption("--cov-data-file", default=None)
+    if cov_data_file:
+        os.environ["COVERAGE_FILE"] = cov_data_file
+
     if is_master(config):
         # linter should be able de detect and convert some deprecation warnings
         # into validation errors but during testing we disable this to avoid
