@@ -36,4 +36,6 @@ jobs:
         py310-lower
         py312-lower
         py314-devel
+        py312-lower
+        py314-devel
       platforms: linux,macos

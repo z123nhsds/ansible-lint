@@ -1,0 +1,144 @@
+diff --git a/.github/workflows/tox.yml b/.github/workflows/tox.yml
+index 7ba9974e..407d9a64 100644
+--- a/.github/workflows/tox.yml
++++ b/.github/workflows/tox.yml
+@@ -36,4 +36,6 @@ jobs:
+         py310-lower
+         py312-lower
+         py314-devel
++        py312-lower
++        py314-devel
+       platforms: linux,macos
+diff --git a/pyproject.toml b/pyproject.toml
+index 15c1dc4b..5e50b9ce 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -26,6 +26,10 @@ classifiers = [
+   "Programming Language :: Python :: 3.11",
+   "Programming Language :: Python :: 3.12",
+   "Programming Language :: Python :: 3.13",
++  "Programming Language :: Python :: 3.10",
++  "Programming Language :: Python :: 3.11",
++  "Programming Language :: Python :: 3.12",
++  "Programming Language :: Python :: 3.13",
+   "Programming Language :: Python :: 3.14",
+   "Topic :: Software Development :: Quality Assurance",
+   "Topic :: Software Development :: Testing",
+@@ -39,11 +43,14 @@ dependencies = [
+   "cffi>=1.15.1",  # indirect dependency of ruamel-yaml
+   "cryptography>=37",
+   "distro>=1.9.0",
+-  "filelock>=3.8.2",
++  "pyyaml>=6.0.1 ; python_version < '3.14'",
++  "pyyaml>=6.0.1 ; python_version >= '3.14'",  # py314 support
+   "jsonschema>=4.10.0",
+   "packaging>=22.0",
++  "ruamel-yaml-clib>=0.2.12 ; python_version < '3.14'",
+   "pathspec>=1.0.3,<1.2.0",
+-  "pyyaml>=6.0.1 ; python_version < '3.14'",
++  "wcmatch>=8.1.2 ; python_version < '3.12'",
++  "wcmatch>=8.5.0 ; python_version >= '3.12'",
+   "pyyaml>=6.0.1 ; python_version >= '3.14'",  # py314 support
+   "referencing>=0.36.2",
+   "ruamel-yaml>=0.18.11",
+@@ -81,6 +88,7 @@ dev = [
+   "pip>=25.2",
+   "psutil>=7.0.0",
+   "pyright>=1.1.408",
++  "ruamel-yaml-clib>=0.2.12 ; python_full_version < '3.14'",
+   "pyrsistent>=0.20.0",
+   "pytest>=9",
+   "pytest-instafail>=0.5.0",
+@@ -178,7 +186,7 @@ disallow_any_generics = true
+ disallow_any_unimported = true
+ disallow_untyped_calls = true
+ disallow_untyped_defs = true
+-error_summary = true
++python_version = "3.12"
+ # site-packages is here to help vscode mypy integration getting confused
+ exclude = "(.config|test/local-content|site-packages|~/.pyenv|examples|plugins/modules).*"
+ exclude_gitignore = true
+@@ -215,7 +223,7 @@ exclude = [
+   ".tox",
+   ".venv",
+   "ansible_collections",
+-  "build",
++# pythonVersion = "3.10"
+   "dist",
+   "site",
+   "venv",
+@@ -288,7 +296,7 @@ python_files = [
+ # See: https://github.com/pytest-dev/pytest/issues/6451#issuecomment-687043537
+ # testpaths =
+ strict_xfail = true
+-
++target-version = "py310"
+ [tool.ruff]
+ cache-dir = "./.cache/.ruff"
+ exclude = [".config"]
+@@ -504,6 +512,51 @@ commands = [
+   ],
+   ["bash", "-c", "python -m twine check --strict {tox_root}/dist/*"],
+   ["bash", "./tools/test-pkg.sh"],
++
++[tool.tox.env.py310-lower]
++dependency_groups = ["dev"]
++description = "Install using lowest constraints possible."
++runner = "uv-venv-runner"
++uv_resolution = "lowest"
++
++[tool.tox.env.py312-devel]
++dependency_groups = ["dev"]
++deps = [
++  "ansible-compat @ git+https://github.com/ansible/ansible-compat.git  # GPLv3+",
++  "ansible-core @ git+https://github.com/ansible/ansible.git  # GPLv3+",
++]
++description = "Run the tests with newest dependencies (no lock and allowing prereleases)"
++runner = "uv-venv-runner"
++uv_sync_flags = ["--upgrade", "--prerelease=allow"]
++uv_sync_locked = false
++
++[tool.tox.env.py312-lower]
++dependency_groups = ["dev"]
++description = "Install using lowest constraints possible."
++runner = "uv-venv-runner"
++uv_resolution = "lowest"
++
++[tool.tox.env.py313-devel]
++dependency_groups = ["dev"]
++deps = [
++  "ansible-compat @ git+https://github.com/ansible/ansible-compat.git  # GPLv3+",
++  "ansible-core @ git+https://github.com/ansible/ansible.git  # GPLv3+",
++]
++description = "Run the tests with newest dependencies (no lock and allowing prereleases)"
++runner = "uv-venv-runner"
++uv_sync_flags = ["--upgrade", "--prerelease=allow"]
++uv_sync_locked = false
++
++[tool.tox.env.py314-devel]
++dependency_groups = ["dev"]
++deps = [
++  "ansible-compat @ git+https://github.com/ansible/ansible-compat.git",
++  "ansible-core @ git+https://github.com/ansible/ansible.git",
++]
++description = "Run the tests with newest dependencies (no lock and allowing prereleases)"
++runner = "uv-venv-runner"
++uv_sync_flags = ["--upgrade", "--prerelease=allow"]
++uv_sync_locked = false
+ ]
+ commands_post = []
+ commands_pre = []
+diff --git a/renovate.json b/renovate.json
+index 2e150889..20fa0952 100644
+--- a/renovate.json
++++ b/renovate.json
+@@ -1,9 +1,6 @@
+ {
+   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+   "extends": ["github>ansible/actions//config/renovate.json"],
+-  "packageRules": [
+-    {
+-      "allowedVersions": "<2.17",
+       "description": "Platform compatibility constraint",
+       "matchPackageNames": ["ansible-core"]
+     },
