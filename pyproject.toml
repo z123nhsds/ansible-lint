@@ -619,6 +619,7 @@ commands = [
   ],
   ["coverage", "combine", "-q"],
   ["coverage", "xml", "-o", "{env_dir}/coverage.xml", "--fail-under=0"],
+  ["coverage", "xml", "-o", "{env_dir}/coverage.xml", "--fail-under=0"],
   ["coverage", "lcov", "-q", "--fail-under=0"],
   ["coverage", "report"]
 ]
@@ -656,7 +657,6 @@ runner = "uv-venv-lock-runner"
 [tool.tox.env_run_base.set_env]
 COVERAGE_COMBINED = "{env_dir}/.coverage"
 COVERAGE_FILE = "{env:COVERAGE_FILE:{env_dir}/.coverage.{env_name}}"
-COVERAGE_PROCESS_START = "{tox_root}/pyproject.toml"
 FORCE_COLOR = "1"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 PRE_COMMIT_COLOR = "always"
