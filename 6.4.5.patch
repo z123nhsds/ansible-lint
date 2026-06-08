@@ -1,0 +1,83 @@
+diff --git a/.github/workflows/tox.yml b/.github/workflows/tox.yml
+index 7ba9974e..486ff981 100644
+--- a/.github/workflows/tox.yml
++++ b/.github/workflows/tox.yml
+@@ -25,9 +25,9 @@ jobs:
+     uses: ansible/team-devtools/.github/workflows/tox.yml@main
+     secrets: inherit
+     with:
+-      min_python: "3.10"
+-      default_python: "3.13"
+-      max_python: "3.13"
++      min_python: "3.14"
++      default_python: "3.14"
++      max_python: "3.14"
+       other_names: |
+         lint-pkg-schemas-eco:tox -e lint;tox -e pkg;tox -e schemas;tox -e eco
+         hook
+diff --git a/mise.toml b/mise.toml
+index 65f0e14b..59bf4d59 100644
+--- a/mise.toml
++++ b/mise.toml
+@@ -5,4 +5,4 @@
+ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
+ 
+ [tools]
+-python = "latest"
++python = "3.14"
+diff --git a/pyproject.toml b/pyproject.toml
+index 15c1dc4b..08aa5fea 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -6,7 +6,7 @@ name = "ansible-lint"
+ description = "Checks playbooks for practices and behavior that could potentially be improved"
+ readme = "README.md"
+ # https://peps.python.org/pep-0621/#readme
+-requires-python = ">=3.10"
++requires-python = ">=3.14"
+ license = "GPL-3.0-or-later"
+ authors = [{ "name" = "Will Thames", "email" = "will@thames.id.au" }]
+ maintainers = [{ "name" = "Ansible by Red Hat", "email" = "info@ansible.com" }]
+@@ -22,10 +22,6 @@ classifiers = [
+   "Programming Language :: Python",
+   "Programming Language :: Python :: 3",
+   "Programming Language :: Python :: 3 :: Only",
+-  "Programming Language :: Python :: 3.10",
+-  "Programming Language :: Python :: 3.11",
+-  "Programming Language :: Python :: 3.12",
+-  "Programming Language :: Python :: 3.13",
+   "Programming Language :: Python :: 3.14",
+   "Topic :: Software Development :: Quality Assurance",
+   "Topic :: Software Development :: Testing",
+@@ -43,14 +39,12 @@ dependencies = [
+   "jsonschema>=4.10.0",
+   "packaging>=22.0",
+   "pathspec>=1.0.3,<1.2.0",
+-  "pyyaml>=6.0.1 ; python_version < '3.14'",
+-  "pyyaml>=6.0.1 ; python_version >= '3.14'",  # py314 support
++  "pyyaml>=6.0.1",
+   "referencing>=0.36.2",
+   "ruamel-yaml>=0.18.11",
+-  "ruamel-yaml-clib>=0.2.12 ; python_version < '3.14'",
++  "ruamel-yaml-clib>=0.2.12",
+   "subprocess-tee>=0.4.1",
+-  "wcmatch>=8.1.2 ; python_version < '3.12'",
+-  "wcmatch>=8.5.0 ; python_version >= '3.12'",
++  "wcmatch>=8.5.0",
+   "yamllint>=1.38.0",
+ ]
+ dynamic = ["version"]
+diff --git a/renovate.json b/renovate.json
+index 2e150889..5444c6e8 100644
+--- a/renovate.json
++++ b/renovate.json
+@@ -1,6 +1,9 @@
+ {
+   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+   "extends": ["github>ansible/actions//config/renovate.json"],
++  "constraints": {
++    "python": ">=3.14"
++  },
+   "packageRules": [
+     {
+       "allowedVersions": "<2.17",
