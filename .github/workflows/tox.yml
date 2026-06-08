@@ -25,15 +25,13 @@ jobs:
     uses: ansible/team-devtools/.github/workflows/tox.yml@main
     secrets: inherit
     with:
-      min_python: "3.10"
-      default_python: "3.13"
-      max_python: "3.13"
+      min_python: "3.14"
+      default_python: "3.14"
+      max_python: "3.14"
       other_names: |
         lint-pkg-schemas-eco:tox -e lint;tox -e pkg;tox -e schemas;tox -e eco
         hook
         docs
-        py312-devel
-        py310-lower
-        py312-lower
-        py314-devel
+        devel
+        lower
       platforms: linux,macos
