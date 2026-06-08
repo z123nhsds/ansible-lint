@@ -1,6 +1,20 @@
 ---
-comment: false
+codecov:
+  notify:
+    after_n_builds: 8
+comment:
+  after_n_builds: 8
+  behavior: default
 coverage:
   status:
-    patch: false
-    project: true
+    project:
+      default:
+        target: auto
+        threshold: 0.5%
+    patch:
+      default:
+        target: auto
+        threshold: 0.5%
+flag_management:
+  default_rules:
+    after_n_builds: 8

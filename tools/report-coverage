@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Workaround for coverage merging failure (coveragepy/coveragepy#2140)
+# When running tests in parallel (pytest-xdist or CI matrix shards),
+# coverage.py creates multiple .coverage.* files. This script safely
+# combines them into a single .coverage file and generates coverage.xml.
+#
+# Key insight: let `coverage combine` do its own globbing instead of
+# passing explicit filenames, because files can disappear between
+# glob expansion and combine execution (especially on macOS).
+set -euo pipefail
+
+TOX_ENV_DIR="${TOX_ENV_DIR:-.tox/py}"
+
+# Clean up stale combined file from previous runs
+rm -f "${TOX_ENV_DIR}/.coverage"
+
+# Let coverage combine do its own globbing — this is the core workaround.
+# When COVERAGE_FILE is set to ".coverage.<env_name>", coverage creates
+# .coverage.<env_name>.* parallel data files. `coverage combine` without
+# explicit paths will find and merge them automatically, gracefully
+# handling any files that disappear between glob and read.
+coverage combine -q
+
+# Generate Cobertura XML report for Codecov consumption
+coverage xml \
+    --data-file="${TOX_ENV_DIR}/.coverage" \
+    -o "${TOX_ENV_DIR}/coverage.xml" \
+    --fail-under=0
+
+# Generate lcov report (optional, for other consumers)
+coverage lcov -q --fail-under=0
+
+# Display summary report
+coverage report

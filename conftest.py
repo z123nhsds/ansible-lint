@@ -23,28 +23,28 @@ if missing:
     )
 
 
-# See: https://github.com/pytest-dev/pytest/issues/1402#issuecomment-186299177
-def pytest_configure(config: pytest.Config) -> None:
-    """Ensure we run preparation only on master thread when running in parallel."""
-    if is_help_option_present(config):
-        return
-    if is_master(config):
-        # linter should be able de detect and convert some deprecation warnings
-        # into validation errors but during testing we disable this to avoid
-        # unnecessary noise. Still, we might want to enable it for particular
-        # tests, for testing our ability to detect deprecations.
-        os.environ["ANSIBLE_DEPRECATION_WARNINGS"] = "False"
-        # we need to be sure that we have the requirements installed as some tests
         # might depend on these. This approach is compatible with GHA caching.
         try:
             subprocess.check_output(
                 ["./tools/install-reqs.sh"],
                 stderr=subprocess.PIPE,
-                text=True,
-            )
-        except subprocess.CalledProcessError as exc:
-            print(f"{exc}\n{exc.stderr}\n{exc.stdout}", file=sys.stderr)  # noqa: T201
-            sys.exit(1)
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add coverage-related options to control coverage file output path."""
+    parser.addoption(
+        "--cov-file",
+        default=None,
+        help="Override COVERAGE_FILE env var for this test run. "
+        "Useful for parallel test shards to avoid coverage data collisions.",
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Configure coverage file path based on --cov-file option."""
+    cov_file = config.getoption("--cov-file")
+    if cov_file:
+        os.environ["COVERAGE_FILE"] = cov_file
 
 
 def is_help_option_present(config: pytest.Config) -> bool:
