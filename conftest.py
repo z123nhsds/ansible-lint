@@ -23,9 +23,36 @@ if missing:
     )
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add pytest options for coverage configuration."""
+    group = parser.getgroup("coverage")
+    group.addoption(
+        "--coverage-file",
+        action="store",
+        dest="coverage_file",
+        default=None,
+        help="Path to the coverage data file. If not specified, defaults to .coverage.",
+    )
+    group.addoption(
+        "--coverage-dir",
+        action="store",
+        dest="coverage_dir",
+        default=None,
+        help="Directory to store coverage data files. If not specified, defaults to project root.",
+    )
+
+
 # See: https://github.com/pytest-dev/pytest/issues/1402#issuecomment-186299177
 def pytest_configure(config: pytest.Config) -> None:
-    """Ensure we run preparation only on master thread when running in parallel."""
+    """Configure coverage based on pytest options and run preparation only on master thread when running in parallel."""
+    coverage_file = config.getoption("coverage_file")
+    coverage_dir = config.getoption("coverage_dir")
+    
+    if coverage_file:
+        os.environ["COVERAGE_FILE"] = coverage_file
+    elif coverage_dir:
+        os.environ["COVERAGE_DIR"] = coverage_dir
+    
     if is_help_option_present(config):
         return
     if is_master(config):

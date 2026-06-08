@@ -1,0 +1,110 @@
+---
+# Example GitHub Actions workflow for parallel testing with coverage combination
+# This demonstrates how to set up parallel tests and combine coverage reports
+name: example-parallel-tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  # 1. Parallel test job - runs tests in multiple shards
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define your test shards here
+        shard: [1, 2, 3, 4]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests with coverage (shard specific)
+        env:
+          COVERAGE_FILE: ".coverage.shard-${{ matrix.shard }}-${{ matrix.python-version }}"
+        run: |
+          # Option 1: Using pytest directly with coverage
+          coverage run -m pytest \
+            --dist=loadscope \
+            --numprocesses=auto \
+            --cov=ansiblelint \
+            --cov-report=term \
+            --cov-report=xml:coverage-${{ matrix.shard }}-${{ matrix.python-version }}.xml \
+            test/
+          
+          # Option 2: Using tox (as in ansible-lint project)
+          # tox -e py
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}-${{ matrix.python-version }}
+          path: |
+            .coverage*
+            coverage-*.xml
+          retention-days: 1
+          if-no-files-found: ignore
+
+  # 2. Coverage combination job - runs after all test shards complete
+  combine-coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()  # Run even if some tests fail
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install coverage
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: coverage-artifacts/
+          pattern: coverage-shard-*
+          merge-multiple: true
+
+      - name: Combine coverage reports
+        run: |
+          # Use our custom script to combine coverage
+          chmod +x ./tools/combine-coverage.sh
+          ./tools/combine-coverage.sh -d coverage-artifacts -o coverage.xml -v
+          
+          # Alternative: Use coverage combine directly
+          # ls -la coverage-artifacts/
+          # cd coverage-artifacts/
+          # coverage combine
+          # coverage xml -o ../coverage.xml
+
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true

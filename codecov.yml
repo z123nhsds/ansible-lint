@@ -4,3 +4,22 @@ coverage:
   status:
     patch: false
     project: true
+  # 告诉 Codecov 等待指定数量的构建后再显示最终覆盖率报告
+  # 这样可以确保所有分片的覆盖率数据都上传完毕后才合并
+  # 如果有 4 个测试分片（例如不同 Python 版本或平台），就设为 4
+  # adjust this value to match your actual number of parallel coverage jobs
+  after_n_builds: 4
+  # 忽略由于文件移动或删除导致的覆盖率数据不匹配问题
+  ignore_errors: true
+  # 设置如何处理多个覆盖率报告的合并策略
+  # 通常不需要显式设置，默认会自动处理
+# 用于指定哪些文件应该从覆盖率报告中排除
+ignore:
+  - "test/**/*"
+  - "examples/**/*"
+  - "build/**/*"
+# 修复代码路径的配置，特别适用于分片测试
+# 当不同机器上的文件路径不同时，确保 Codecov 可以正确映射
+fixes:
+  - "/__w/ansible-lint/ansible-lint/::"
+  - "src/::src/"

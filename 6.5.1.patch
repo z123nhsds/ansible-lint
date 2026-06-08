@@ -1,0 +1,69 @@
+diff --git a/codecov.yml b/codecov.yml
+index 36776c78..ac291a25 100644
+--- a/codecov.yml
++++ b/codecov.yml
+@@ -4,3 +4,22 @@ coverage:
+   status:
+     patch: false
+     project: true
++  # 告诉 Codecov 等待指定数量的构建后再显示最终覆盖率报告
++  # 这样可以确保所有分片的覆盖率数据都上传完毕后才合并
++  # 如果有 4 个测试分片（例如不同 Python 版本或平台），就设为 4
++  # adjust this value to match your actual number of parallel coverage jobs
++  after_n_builds: 4
++  # 忽略由于文件移动或删除导致的覆盖率数据不匹配问题
++  ignore_errors: true
++  # 设置如何处理多个覆盖率报告的合并策略
++  # 通常不需要显式设置，默认会自动处理
++# 用于指定哪些文件应该从覆盖率报告中排除
++ignore:
++  - "test/**/*"
++  - "examples/**/*"
++  - "build/**/*"
++# 修复代码路径的配置，特别适用于分片测试
++# 当不同机器上的文件路径不同时，确保 Codecov 可以正确映射
++fixes:
++  - "/__w/ansible-lint/ansible-lint/::"
++  - "src/::src/"
+diff --git a/conftest.py b/conftest.py
+index 8daf2e60..17dd9c56 100644
+--- a/conftest.py
++++ b/conftest.py
+@@ -23,9 +23,36 @@ if missing:
+     )
+ 
+ 
++def pytest_addoption(parser: pytest.Parser) -> None:
++    """Add pytest options for coverage configuration."""
++    group = parser.getgroup("coverage")
++    group.addoption(
++        "--coverage-file",
++        action="store",
++        dest="coverage_file",
++        default=None,
++        help="Path to the coverage data file. If not specified, defaults to .coverage.",
++    )
++    group.addoption(
++        "--coverage-dir",
++        action="store",
++        dest="coverage_dir",
++        default=None,
++        help="Directory to store coverage data files. If not specified, defaults to project root.",
++    )
++
++
+ # See: https://github.com/pytest-dev/pytest/issues/1402#issuecomment-186299177
+ def pytest_configure(config: pytest.Config) -> None:
+-    """Ensure we run preparation only on master thread when running in parallel."""
++    """Configure coverage based on pytest options and run preparation only on master thread when running in parallel."""
++    coverage_file = config.getoption("coverage_file")
++    coverage_dir = config.getoption("coverage_dir")
++    
++    if coverage_file:
++        os.environ["COVERAGE_FILE"] = coverage_file
++    elif coverage_dir:
++        os.environ["COVERAGE_DIR"] = coverage_dir
++    
+     if is_help_option_present(config):
+         return
+     if is_master(config):
