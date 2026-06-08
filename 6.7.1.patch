@@ -1,0 +1,28 @@
+diff --git a/conftest.py b/conftest.py
+index 8daf2e60..000d5a17 100644
+--- a/conftest.py
++++ b/conftest.py
+@@ -30,23 +30,6 @@ def pytest_configure(config: pytest.Config) -> None:
+         return
+     if is_master(config):
+         # linter should be able de detect and convert some deprecation warnings
+-        # into validation errors but during testing we disable this to avoid
+-        # unnecessary noise. Still, we might want to enable it for particular
+-        # tests, for testing our ability to detect deprecations.
+-        os.environ["ANSIBLE_DEPRECATION_WARNINGS"] = "False"
+-        # we need to be sure that we have the requirements installed as some tests
+-        # might depend on these. This approach is compatible with GHA caching.
+-        try:
+-            subprocess.check_output(
+-                ["./tools/install-reqs.sh"],
+-                stderr=subprocess.PIPE,
+-                text=True,
+-            )
+-        except subprocess.CalledProcessError as exc:
+-            print(f"{exc}\n{exc.stderr}\n{exc.stdout}", file=sys.stderr)  # noqa: T201
+-            sys.exit(1)
+-
+-
+ def is_help_option_present(config: pytest.Config) -> bool:
+     """Return true if pytest invocation was not about running tests."""
+     return any(config.getoption(x) for x in ["--fixtures", "--help", "--collect-only"])
