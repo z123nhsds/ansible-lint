@@ -1,0 +1,134 @@
+diff --git a/renovate.json b/renovate.json
+--- a/renovate.json
++++ b/renovate.json
+@@ -1,7 +1,22 @@
+ {
+   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+   "extends": ["github>ansible/actions//config/renovate.json"],
++  "addLabels": ["dependencies", "release:automation"],
++  "commitBodyTable": true,
++  "customManagers": [
++    {
++      "customType": "regex",
++      "managerFilePatterns": ["/(^|/)\\.readthedocs\\.yml$/"],
++      "matchStrings": ["python:\\s+\"(?<currentValue>[^\"]+)\""],
++      "datasourceTemplate": "python-version",
++      "versioningTemplate": "python",
++      "depNameTemplate": "python"
++    }
++  ],
++  "dependencyDashboard": true,
+   "packageRules": [
++    {
++      "description": "Keep local development and Read the Docs Python runtimes aligned",
++      "groupName": "python-runtime",
++      "matchManagers": ["custom.regex", "mise"],
++      "matchPackageNames": ["python"]
++    },
+     {
+       "allowedVersions": "<2.17",
+       "description": "Platform compatibility constraint",
+@@ -11,7 +26,7 @@
+     },
+     {
+       "allowedVersions": "<38",
+-      "description": "Platform compatibility constraint",
++      "description": "Compatibility constraint for ansible-lint 6.2.x dependency updates",
+       "matchPackageNames": ["cryptography"]
+     },
+     {
+diff --git a/pyproject.toml b/pyproject.toml
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -31,7 +31,7 @@ dependencies = [
+   "ansible-compat>=26.3.0",
+   "ansible-core>=2.16.14",
+   "black>=24.3.0",
+   "cffi>=1.15.1",  # indirect dependency of ruamel-yaml
+-  "cryptography>=37",
++  "cryptography>=37,<38",
+   "distro>=1.9.0",
+   "filelock>=3.8.2",
+   "jsonschema>=4.10.0",
+@@ -432,7 +432,7 @@ commands = [
+ ]
+ commands_post = []
+-commands_pre = []
++commands_pre = [["python", "-VV"]]
+ dependency_groups = ["docs"]
+ description = "Builds docs"
+ skip_install = false
+@@ -482,7 +482,7 @@ commands = [
+   ["bash", "-c", "python -m twine check --strict {tox_root}/dist/*"],
+   ["bash", "./tools/test-pkg.sh"],
+ ]
+-commands_pre = []
++commands_pre = [["python", "-VV"]]
+ commands_post = []
+ dependency_groups = ["pkg"]
+ description = """
+diff --git a/.packit.yaml b/.packit.yaml
+--- a/.packit.yaml
++++ b/.packit.yaml
+@@ -16,6 +16,13 @@ srpm_build_deps:
+   - python3-setuptools_scm
+ 
+ jobs:
++  - &copr_build_pr
++    job: copr_build
++    identifier: dependency-pr-copr
++    trigger: pull_request
++    merge_pr_in_ci: true
++    targets:
++      - fedora-rawhide-x86_64 # one on PR should be enough
++
+   - job: copr_build
++    identifier: main-post-merge-copr
+     trigger: commit
+     branch: main
+     targets:
+@@ -29,18 +36,10 @@ jobs:
+       - centos-stream-9-aarch64
+       - centos-stream-9-x86_64
+ 
+-  - job: copr_build
+-    trigger: pull_request
+-    targets:
+-      - fedora-rawhide-x86_64 # one on PR should be enough
+-
++  - <<: *copr_build_pr
+ 
+   # - job: tests
+   #   trigger: pull_request
+   #   targets:
+   #   - fedora-all
+ 
+-  # - job: propose_downstream
+-  #   trigger: release
+-  #   dist_git_branches:
+-  #     - main
++  - job: propose_downstream
++    identifier: upstream-release-sync
++    trigger: release
++    dist_git_branches:
++      - fedora-all
+diff --git a/.readthedocs.yml b/.readthedocs.yml
+--- a/.readthedocs.yml
++++ b/.readthedocs.yml
+@@ -14,6 +14,7 @@ build:
+     - ~/.local/bin/mise trust
+     - ~/.local/bin/mise install
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise doctor || true
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -m pip install tox"
++    - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -VV"
+     - PATH=~/.local/share/mise/shims:$PATH ~/.local/bin/mise exec --command "python3 -m tox -e docs"
+ submodules:
+   include: all
+diff --git a/mise.toml b/mise.toml
+--- a/mise.toml
++++ b/mise.toml
+@@ -5,4 +5,4 @@ UV_PROJECT_ENVIRONMENT = "{{ get_env(name='VIRTUAL_ENV', default='.venv') }}"
+ 
+ [tools]
+-python = "latest"
++python = "3.13"
