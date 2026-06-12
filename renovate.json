@@ -51,6 +51,11 @@
       "allowedVersions": "<65.6",
       "description": "Platform compatibility constraint",
       "matchPackageNames": ["setuptools"]
+    },
+    {
+      "allowedVersions": ">=3.14",
+      "description": "Python version constraint for 3.14+",
+      "matchPackageNames": ["python"]
     }
   ]
 }
