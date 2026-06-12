@@ -112,7 +112,27 @@ runs:
       if: inputs.requirements_file != ''
       shell: bash
       working-directory: ${{ steps.inputs.outputs.working_directory }}
-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
+      run: |
+        ansible-galaxy collection install -r ${{ inputs.requirements_file }} --force
+        COLL_PATHS=""
+        if [[ -n "${ANSIBLE_COLLECTIONS_PATHS:-}" ]]; then
+          COLL_PATHS="${ANSIBLE_COLLECTIONS_PATHS}"
+        fi
+        for candidate in \
+          "${HOME}/.ansible/collections" \
+          "${{ steps.inputs.outputs.working_directory }}/collections" \
+          "/usr/share/ansible/collections"; do
+          if [[ -d "${candidate}" ]]; then
+            if [[ -n "${COLL_PATHS}" ]]; then
+              COLL_PATHS="${COLL_PATHS}:${candidate}"
+            else
+              COLL_PATHS="${candidate}"
+            fi
+          fi
+        done
+        if [[ -n "${COLL_PATHS}" ]]; then
+          echo "ANSIBLE_COLLECTIONS_PATHS=${COLL_PATHS}" >> "$GITHUB_ENV"
+        fi
 
     - name: Run ansible-lint
       shell: bash

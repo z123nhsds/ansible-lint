@@ -22,3 +22,16 @@
     # file as we only support latest stable version of ansible-core when used
     # as an action.
     - ansible-core>=2.19.0
+
+- id: ansible-lint-collections
+  name: ansible-lint (with collections)
+  description: >
+    This hook runs ansible-lint with ANSIBLE_COLLECTIONS_PATHS and PYTHONPATH
+    preserved from the parent process. Use this variant when you rely on
+    collections installed by ansible-galaxy (e.g. via a GitHub Action).
+    Requires ansible-galaxy to be available on $PATH.
+  entry: tools/ansible-lint-hook.sh
+  language: script
+  pass_filenames: false
+  always_run: true
+  require_serial: true

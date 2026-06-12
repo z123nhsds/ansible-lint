@@ -1,9 +1,52 @@
-diff --git a/6.2.4.patch b/6.2.4.patch
-new file mode 100644
-index 00000000..889485d6
---- /dev/null
-+++ b/6.2.4.patch
-@@ -0,0 +1,3 @@
-+diff --git a/6.2.4.patch b/6.2.4.patch
-+new file mode 100644
-+index 00000000..e69de29b
+diff --git a/.pre-commit-hooks.yaml b/.pre-commit-hooks.yaml
+index 455e7b16..d74c5f4c 100644
+--- a/.pre-commit-hooks.yaml
++++ b/.pre-commit-hooks.yaml
+@@ -22,3 +22,16 @@
+     # file as we only support latest stable version of ansible-core when used
+     # as an action.
+     - ansible-core>=2.19.0
++
++- id: ansible-lint-collections
++  name: ansible-lint (with collections)
++  description: >
++    This hook runs ansible-lint with ANSIBLE_COLLECTIONS_PATHS and PYTHONPATH
++    preserved from the parent process. Use this variant when you rely on
++    collections installed by ansible-galaxy (e.g. via a GitHub Action).
++    Requires ansible-galaxy to be available on $PATH.
++  entry: tools/ansible-lint-hook.sh
++  language: script
++  pass_filenames: false
++  always_run: true
++  require_serial: true
+--- a/action.yml
++++ b/action.yml
+@@ -112,7 +112,27 @@ runs:
+       if: inputs.requirements_file != ''
+       shell: bash
+       working-directory: ${{ steps.inputs.outputs.working_directory }}
+-      run: ansible-galaxy install -r ${{ inputs.requirements_file }}
++      run: |
++        ansible-galaxy collection install -r ${{ inputs.requirements_file }} --force
++        COLL_PATHS=""
++        if [[ -n "${ANSIBLE_COLLECTIONS_PATHS:-}" ]]; then
++          COLL_PATHS="${ANSIBLE_COLLECTIONS_PATHS}"
++        fi
++        for candidate in \
++          "${HOME}/.ansible/collections" \
++          "${{ steps.inputs.outputs.working_directory }}/collections" \
++          "/usr/share/ansible/collections"; do
++          if [[ -d "${candidate}" ]]; then
++            if [[ -n "${COLL_PATHS}" ]]; then
++              COLL_PATHS="${COLL_PATHS}:${candidate}"
++            else
++              COLL_PATHS="${candidate}"
++            fi
++          fi
++        done
++        if [[ -n "${COLL_PATHS}" ]]; then
++          echo "ANSIBLE_COLLECTIONS_PATHS=${COLL_PATHS}" >> "$GITHUB_ENV"
++        fi
+ 
+     - name: Run ansible-lint
+       shell: bash
